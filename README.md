@@ -7,11 +7,14 @@ A clean-architecture, interactive Graphical Desktop Sudoku game and automatic ba
 ## Key Features
 
 - **Graphical User Interface (GUI)**: Built using Python Tkinter, providing a clean 9x9 grid with 3x3 sub-grid borders.
+- **Move History (Undo / Redo)**: Step-by-step move history with global keyboard shortcuts (`Ctrl+Z` to Undo, `Ctrl+Y` to Redo).
+- **Same-Number Focus Highlight Guide**: Selecting any number on the grid automatically highlights all matching instances in soft cyan for quick scanning.
+- **Get Hint System**: Built-in intelligent hint generator that places the next correct number using the Backtracking solver algorithm.
 - **Real-Time Visual Validation**: Dynamic cell color highlighting (Red background/text for invalid moves, Green background/text for correct moves).
 - **Live Stopwatch & Completion Timer**: Real-time timer tracking game duration and recording final completion time upon solving.
+- **High Score Persistence**: Automatically saves your best completion times per difficulty level in `data/high_scores.json`.
 - **Automatic Sudoku Solver**: Integrated AI solver powered by the **Backtracking Depth-First Search Algorithm**.
 - **Dynamic Puzzle Generator**: Generates unique, valid, and guaranteed solvable puzzles across difficulty modes (**Easy**, **Medium**, **Hard**).
-- **Rule Validator**: Real-time validation checking player inputs against standard Sudoku constraints (Row, Column, 3x3 Sub-grid).
 - **Clean Architecture**: Strict separation of concerns (Core Logic, Board Model, Solver Algorithm, Generator, UI Layer).
 
 ---
@@ -25,6 +28,9 @@ Sudoku Game/
 ├── README.md                    # Project documentation
 ├── .gitignore                   # Git untracked rules configuration
 │
+├── data/                        # Local data storage directory
+│   └── high_scores.json        # Best time records per difficulty
+│
 └── src/                         # Source package directory
     ├── core/                    # Core business logic module
     │   ├── board.py             # 9x9 Grid matrix data model & state management
@@ -35,7 +41,7 @@ Sudoku Game/
     │   └── puzzle_generator.py  # Generates puzzles with difficulty settings
     │
     └── ui/                      # Interface layer module
-        ├── gui_ui.py            # Tkinter Graphical Desktop UI with Timer & Color Feedback
+        ├── gui_ui.py            # Tkinter Graphical Desktop UI with Timer, Color Feedback, Undo/Redo & Hints
         └── cli_ui.py            # Command Line Interface (CLI)
 ```
 
@@ -58,9 +64,15 @@ python main.py
 
 ## Desktop GUI Features & Controls
 
+- **Undo / Redo System**:
+  - **Undo (`Ctrl + Z`)**: Revert previous moves step-by-step.
+  - **Redo (`Ctrl + Y`)**: Re-apply undone moves.
+- **Same-Number Highlight**: Click any filled cell to highlight all matching numbers on the board in soft cyan.
+- **Get Hint**: Automatically fills in the correct number for the next unassigned cell.
 - **Real-Time Color Feedback**:
   - **Red Cell**: Indicates an invalid move that conflicts with another number in the same Row, Column, or 3x3 Box.
   - **Green Cell**: Indicates a valid placement adhering to Sudoku rules.
+  - **Purple Cell**: Indicates a number placed by the Hint System.
   - **Locked Gray Cell**: Pre-filled puzzle numbers.
 - **Difficulty Selector**: Select between Easy, Medium, or Hard difficulty before starting a new game.
 - **New Game**: Generates a new Sudoku puzzle and starts the live timer (`Time: 00:00`).
