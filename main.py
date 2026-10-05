@@ -1,19 +1,24 @@
 """
 Sudoku Game Entry Point
-Runs the Sudoku CLI application.
+Launches the Graphical User Interface (GUI) Desktop Window.
 """
 
 import sys
 import os
+import tkinter as tk
 
 # Ensure project root directory is in Python module search path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from src.ui.cli_ui import CLIInterface
+from src.ui.gui_ui import SudokuGUI
 
 def main():
-    game_ui = CLIInterface()
-    game_ui.start_game()
+    root = tk.Tk()
+    app = SudokuGUI(root)
+    try:
+        root.mainloop()
+    except KeyboardInterrupt:
+        pass  # Gracefully exit on Ctrl+C without showing traceback
 
 if __name__ == "__main__":
     main()
