@@ -1,7 +1,7 @@
 """
 Sudoku Graphical User Interface (GUI)
 Built with Python Tkinter framework.
-Clean visual grid with validation and solver integration.
+Clean visual grid with validation, solver integration, and dynamic timer.
 Avoids emojis as per configuration directive.
 """
 
@@ -19,7 +19,7 @@ class SudokuGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Sudoku Game & Solver")
-        self.root.geometry("540x640")
+        self.root.geometry("580x640")
         self.root.resizable(False, False)
         self.root.protocol("WM_DELETE_WINDOW", self._on_closing)
 
@@ -27,14 +27,19 @@ class SudokuGUI:
         self.entries = [[None for _ in range(9)] for _ in range(9)]
         self.difficulty_var = tk.StringVar(value="medium")
 
+        # Timer State Variables
+        self.timer_seconds = 0
+        self.timer_running = False
+        self.timer_job = None
+
         self._setup_styles()
         self._create_widgets()
         self.new_game()
 
     def _on_closing(self):
+        self._stop_timer()
         self.root.quit()
         self.root.destroy()
-
 
     def _setup_styles(self):
         style = ttk.Style()
@@ -57,10 +62,10 @@ class SudokuGUI:
             textvariable=self.difficulty_var,
             values=["easy", "medium", "hard"],
             state="readonly",
-            width=10,
+            width=8,
             font=("Segoe UI", 10)
         )
-        diff_combo.pack(side=tk.LEFT, padx=(0, 15))
+        diff_combo.pack(side=tk.LEFT, padx=(0, 10))
 
         btn_new = tk.Button(
             control_frame,
@@ -71,12 +76,12 @@ class SudokuGUI:
             fg="white",
             activebackground="#1E3D6B",
             activeforeground="white",
-            padx=10,
+            padx=8,
             pady=4,
             relief=tk.FLAT,
             cursor="hand2"
         )
-        btn_new.pack(side=tk.LEFT, padx=4)
+        btn_new.pack(side=tk.LEFT, padx=3)
 
         btn_solve = tk.Button(
             control_frame,
@@ -87,12 +92,12 @@ class SudokuGUI:
             fg="white",
             activebackground="#1E8449",
             activeforeground="white",
-            padx=10,
+            padx=8,
             pady=4,
             relief=tk.FLAT,
             cursor="hand2"
         )
-        btn_solve.pack(side=tk.LEFT, padx=4)
+        btn_solve.pack(side=tk.LEFT, padx=3)
 
         btn_reset = tk.Button(
             control_frame,
@@ -103,12 +108,22 @@ class SudokuGUI:
             fg="white",
             activebackground="#C0392B",
             activeforeground="white",
-            padx=10,
+            padx=8,
             pady=4,
             relief=tk.FLAT,
             cursor="hand2"
         )
-        btn_reset.pack(side=tk.LEFT, padx=4)
+        btn_reset.pack(side=tk.LEFT, padx=3)
+
+        # Timer Display Label
+        self.timer_label = tk.Label(
+            control_frame,
+            text="Time: 00:00",
+            font=("Segoe UI", 10, "bold"),
+            bg="#F0F0F0",
+            fg="#2C3E50"
+        )
+        self.timer_label.pack(side=tk.RIGHT, padx=(10, 5))
 
         # Main 9x9 Board Frame
         board_container = tk.Frame(self.root, bg="#222222", bd=2)
@@ -181,6 +196,32 @@ class SudokuGUI:
         )
         self.status_label.pack(side=tk.BOTTOM, fill=tk.X)
 
+    # Timer Methods
+    def _start_timer(self):
+        self._stop_timer()
+        self.timer_seconds = 0
+        self.timer_running = True
+        self._tick_timer()
+
+    def _stop_timer(self):
+        self.timer_running = False
+        if self.timer_job:
+            self.root.after_cancel(self.timer_job)
+            self.timer_job = None
+
+    def _tick_timer(self):
+        if self.timer_running:
+            mins = self.timer_seconds // 60
+            secs = self.timer_seconds % 60
+            self.timer_label.config(text=f"Time: {mins:02d}:{secs:02d}")
+            self.timer_seconds += 1
+            self.timer_job = self.root.after(1000, self._tick_timer)
+
+    def _get_formatted_time(self):
+        mins = (self.timer_seconds - 1) // 60 if self.timer_seconds > 0 else 0
+        secs = (self.timer_seconds - 1) % 60 if self.timer_seconds > 0 else 0
+        return f"{mins:02d}:{secs:02d}"
+
     def _validate_input(self, new_val, row_str, col_str):
         row, col = int(row_str), int(col_str)
 
@@ -214,8 +255,10 @@ class SudokuGUI:
                 )
 
                 if self.board.is_complete():
-                    messagebox.showinfo("Success", "Congratulations! You solved the Sudoku puzzle!")
-                    self.status_label.config(text="Puzzle Completed Successfully!", fg="green")
+                    self._stop_timer()
+                    total_time = self._get_formatted_time()
+                    messagebox.showinfo("Success", f"Congratulations! You solved the Sudoku puzzle in {total_time}!")
+                    self.status_label.config(text=f"Puzzle Completed Successfully in {total_time}!", fg="green")
 
         return True
 
@@ -224,6 +267,7 @@ class SudokuGUI:
         puzzle_grid = PuzzleGenerator.generate_puzzle(diff)
         self.board = SudokuBoard(puzzle_grid)
         self._update_gui_from_board()
+        self._start_timer()
         self.status_label.config(
             text=f"New Game Started. Difficulty: {diff.capitalize()}",
             fg="black"
@@ -237,7 +281,8 @@ class SudokuGUI:
                 if not self.board.is_original(r, c):
                     self.board.set_val(r, c, 0)
         self._update_gui_from_board()
-        self.status_label.config(text="Board reset to initial state.", fg="black")
+        self._start_timer()
+        self.status_label.config(text="Board reset to initial state. Timer restarted.", fg="black")
 
     def solve_puzzle(self):
         if not self.board:
@@ -247,8 +292,10 @@ class SudokuGUI:
         if SudokuSolver.solve(grid_to_solve):
             self.board.grid = grid_to_solve
             self._update_gui_from_board(solving=True)
-            self.status_label.config(text="Puzzle solved successfully by Backtracking AI.", fg="green")
-            messagebox.showinfo("Solved", "Puzzle solved successfully!")
+            self._stop_timer()
+            total_time = self._get_formatted_time()
+            self.status_label.config(text=f"Puzzle solved by Backtracking AI in {total_time}.", fg="green")
+            messagebox.showinfo("Solved", f"Puzzle solved successfully in {total_time}!")
         else:
             messagebox.showerror("Error", "No valid solution exists for the current board configuration.")
             self.status_label.config(text="Error: No solution exists.", fg="red")

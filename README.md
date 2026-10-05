@@ -1,16 +1,17 @@
 # Sudoku Game & Solver
 
-A clean-architecture, interactive Sudoku game and automatic backtracking solver built in Python. Designed with modularity, object-oriented design, and clean code standards.
+A clean-architecture, interactive Graphical Desktop Sudoku game and automatic backtracking solver built in Python. Designed with modularity, object-oriented design, and clean code standards.
 
 ---
 
 ## Key Features
 
-- **Interactive CLI Interface**: Clean, formatted 9x9 board rendering with row/column labels and visual separators.
-- **Automatic Sudoku Solver**: Integrated AI solver using the **Backtracking Depth-First Search Algorithm**.
+- **Graphical User Interface (GUI)**: Built using Python Tkinter, providing a clean 9x9 grid with 3x3 sub-grid borders.
+- **Live Stopwatch & Completion Timer**: Real-time timer tracking game duration and recording final completion time upon solving.
+- **Automatic Sudoku Solver**: Integrated AI solver powered by the **Backtracking Depth-First Search Algorithm**.
 - **Dynamic Puzzle Generator**: Generates unique, valid, and guaranteed solvable puzzles across difficulty modes (**Easy**, **Medium**, **Hard**).
-- **Rule Validator**: Built-in validation checking moves against standard Sudoku constraints (Row, Column, 3x3 Sub-grid).
-- **Clean Architecture**: Strict separation of concerns (Core Logic, Board Model, Solver Algorithm, Generator, UI).
+- **Rule Validator**: Real-time validation checking player inputs against standard Sudoku constraints (Row, Column, 3x3 Sub-grid).
+- **Clean Architecture**: Strict separation of concerns (Core Logic, Board Model, Solver Algorithm, Generator, UI Layer).
 
 ---
 
@@ -33,7 +34,8 @@ Sudoku Game/
     │   └── puzzle_generator.py  # Generates puzzles with difficulty settings
     │
     └── ui/                      # Interface layer module
-        └── cli_ui.py            # Terminal display & game control loop
+        ├── gui_ui.py            # Tkinter Graphical Desktop UI with Live Timer
+        └── cli_ui.py            # Command Line Interface (CLI)
 ```
 
 ---
@@ -43,7 +45,7 @@ Sudoku Game/
 ### Prerequisites
 - Python 3.8 or higher installed on your system.
 
-### Running the Game
+### Running the Application
 
 Run the following command from the project root directory:
 
@@ -53,15 +55,12 @@ python main.py
 
 ---
 
-## Game Commands
+## Desktop GUI Controls
 
-During gameplay, interact with the board using the following commands:
-
-| Command | Syntax | Description | Example |
-| :--- | :--- | :--- | :--- |
-| **Set Cell** | `set <row> <col> <val>` | Place a number (1-9) at Row (1-9) and Column (1-9) | `set 3 7 5` |
-| **Solve Puzzle** | `solve` | Instantly solve the current puzzle using Backtracking AI | `solve` |
-| **Quit Game** | `quit` | Exit the application | `quit` |
+- **Difficulty Selector**: Select between Easy, Medium, or Hard difficulty before starting a new game.
+- **New Game**: Generates a new Sudoku puzzle and starts the live timer (`Time: 00:00`).
+- **Solve Puzzle**: Automatically solves the current board configuration using Backtracking AI and stops the completion timer.
+- **Reset**: Restores the current puzzle to its initial state and restarts the timer.
 
 ---
 
