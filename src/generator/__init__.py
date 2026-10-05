@@ -1,0 +1,3 @@
+"""
+Puzzle Generator Package Init
+"""
