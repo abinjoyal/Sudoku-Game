@@ -7,6 +7,7 @@ A clean-architecture, interactive Graphical Desktop Sudoku game and automatic ba
 ## Key Features
 
 - **Graphical User Interface (GUI)**: Built using Python Tkinter, providing a clean 9x9 grid with 3x3 sub-grid borders.
+- **Real-Time Visual Validation**: Dynamic cell color highlighting (Red background/text for invalid moves, Green background/text for correct moves).
 - **Live Stopwatch & Completion Timer**: Real-time timer tracking game duration and recording final completion time upon solving.
 - **Automatic Sudoku Solver**: Integrated AI solver powered by the **Backtracking Depth-First Search Algorithm**.
 - **Dynamic Puzzle Generator**: Generates unique, valid, and guaranteed solvable puzzles across difficulty modes (**Easy**, **Medium**, **Hard**).
@@ -34,7 +35,7 @@ Sudoku Game/
     │   └── puzzle_generator.py  # Generates puzzles with difficulty settings
     │
     └── ui/                      # Interface layer module
-        ├── gui_ui.py            # Tkinter Graphical Desktop UI with Live Timer
+        ├── gui_ui.py            # Tkinter Graphical Desktop UI with Timer & Color Feedback
         └── cli_ui.py            # Command Line Interface (CLI)
 ```
 
@@ -55,11 +56,15 @@ python main.py
 
 ---
 
-## Desktop GUI Controls
+## Desktop GUI Features & Controls
 
+- **Real-Time Color Feedback**:
+  - **Red Cell**: Indicates an invalid move that conflicts with another number in the same Row, Column, or 3x3 Box.
+  - **Green Cell**: Indicates a valid placement adhering to Sudoku rules.
+  - **Locked Gray Cell**: Pre-filled puzzle numbers.
 - **Difficulty Selector**: Select between Easy, Medium, or Hard difficulty before starting a new game.
 - **New Game**: Generates a new Sudoku puzzle and starts the live timer (`Time: 00:00`).
-- **Solve Puzzle**: Automatically solves the current board configuration using Backtracking AI and stops the completion timer.
+- **Solve Puzzle**: Automatically solves the current board configuration using Backtracking AI and records completion time.
 - **Reset**: Restores the current puzzle to its initial state and restarts the timer.
 
 ---

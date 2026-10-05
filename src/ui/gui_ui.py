@@ -224,10 +224,13 @@ class SudokuGUI:
 
     def _validate_input(self, new_val, row_str, col_str):
         row, col = int(row_str), int(col_str)
+        entry = self.entries[row][col]
 
         if new_val == "":
             if self.board and not self.board.is_original(row, col):
                 self.board.set_val(row, col, 0)
+                if entry:
+                    entry.config(bg="#FFFFFF", fg="#0055FF")
             return True
 
         if len(new_val) > 1 or not new_val.isdigit():
@@ -242,12 +245,19 @@ class SudokuGUI:
                 return False
 
             if not SudokuValidator.is_valid_move(self.board.grid, row, col, val):
+                # Invalid / Wrong Move: Red Highlight
+                if entry:
+                    entry.config(bg="#FFEBEE", fg="#D32F2F")
+                self.board.set_val(row, col, val)
                 self.status_label.config(
                     text=f"Invalid move: Number {val} conflicts at Row {row+1}, Col {col+1}.",
                     fg="red"
                 )
                 return True
             else:
+                # Valid / Correct Move: Green Highlight
+                if entry:
+                    entry.config(bg="#E8F5E9", fg="#2E7D32")
                 self.board.set_val(row, col, val)
                 self.status_label.config(
                     text=f"Placed {val} at Row {row+1}, Col {col+1}.",
