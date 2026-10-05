@@ -1,10 +1,13 @@
 """
 Sudoku Graphical User Interface (GUI)
 Built with Python Tkinter framework.
-Clean visual grid with validation, solver integration, and dynamic timer.
+Features: 9x9 grid, Backtracking AI Solver, Dynamic Timer,
+Real-time Red/Green Validation, Hint System, and Best Time Persistence.
 Avoids emojis as per configuration directive.
 """
 
+import json
+import os
 import sys
 import tkinter as tk
 from tkinter import messagebox, ttk
@@ -16,10 +19,12 @@ from src.generator.puzzle_generator import PuzzleGenerator
 
 
 class SudokuGUI:
+    SCORES_FILE = os.path.join("data", "high_scores.json")
+
     def __init__(self, root):
         self.root = root
         self.root.title("Sudoku Game & Solver")
-        self.root.geometry("580x640")
+        self.root.geometry("680x640")
         self.root.resizable(False, False)
         self.root.protocol("WM_DELETE_WINDOW", self._on_closing)
 
@@ -31,6 +36,9 @@ class SudokuGUI:
         self.timer_seconds = 0
         self.timer_running = False
         self.timer_job = None
+
+        # High Scores Storage
+        self.high_scores = self._load_high_scores()
 
         self._setup_styles()
         self._create_widgets()
@@ -45,6 +53,32 @@ class SudokuGUI:
         style = ttk.Style()
         style.theme_use("clam")
 
+    def _load_high_scores(self):
+        if os.path.exists(self.SCORES_FILE):
+            try:
+                with open(self.SCORES_FILE, "r") as f:
+                    return json.load(f)
+            except Exception:
+                pass
+        return {"easy": None, "medium": None, "hard": None}
+
+    def _save_high_scores(self):
+        try:
+            folder = os.path.dirname(self.SCORES_FILE)
+            if folder:
+                os.makedirs(folder, exist_ok=True)
+            with open(self.SCORES_FILE, "w") as f:
+                json.dump(self.high_scores, f, indent=2)
+        except Exception:
+            pass
+
+    def _format_seconds(self, seconds):
+        if seconds is None:
+            return "--:--"
+        mins = seconds // 60
+        secs = seconds % 60
+        return f"{mins:02d}:{secs:02d}"
+
     def _create_widgets(self):
         # Top Header & Controls
         control_frame = tk.Frame(self.root, bg="#F0F0F0", padx=10, pady=10)
@@ -55,17 +89,18 @@ class SudokuGUI:
             text="Difficulty:",
             font=("Segoe UI", 10, "bold"),
             bg="#F0F0F0"
-        ).pack(side=tk.LEFT, padx=(5, 5))
+        ).pack(side=tk.LEFT, padx=(2, 2))
 
         diff_combo = ttk.Combobox(
             control_frame,
             textvariable=self.difficulty_var,
             values=["easy", "medium", "hard"],
             state="readonly",
-            width=8,
+            width=7,
             font=("Segoe UI", 10)
         )
-        diff_combo.pack(side=tk.LEFT, padx=(0, 10))
+        diff_combo.pack(side=tk.LEFT, padx=(0, 8))
+        diff_combo.bind("<<ComboboxSelected>>", self._on_difficulty_changed)
 
         btn_new = tk.Button(
             control_frame,
@@ -76,12 +111,28 @@ class SudokuGUI:
             fg="white",
             activebackground="#1E3D6B",
             activeforeground="white",
-            padx=8,
+            padx=6,
             pady=4,
             relief=tk.FLAT,
             cursor="hand2"
         )
-        btn_new.pack(side=tk.LEFT, padx=3)
+        btn_new.pack(side=tk.LEFT, padx=2)
+
+        btn_hint = tk.Button(
+            control_frame,
+            text="Get Hint",
+            command=self.get_hint,
+            font=("Segoe UI", 9, "bold"),
+            bg="#8E44AD",
+            fg="white",
+            activebackground="#6C3483",
+            activeforeground="white",
+            padx=6,
+            pady=4,
+            relief=tk.FLAT,
+            cursor="hand2"
+        )
+        btn_hint.pack(side=tk.LEFT, padx=2)
 
         btn_solve = tk.Button(
             control_frame,
@@ -92,12 +143,12 @@ class SudokuGUI:
             fg="white",
             activebackground="#1E8449",
             activeforeground="white",
-            padx=8,
+            padx=6,
             pady=4,
             relief=tk.FLAT,
             cursor="hand2"
         )
-        btn_solve.pack(side=tk.LEFT, padx=3)
+        btn_solve.pack(side=tk.LEFT, padx=2)
 
         btn_reset = tk.Button(
             control_frame,
@@ -108,22 +159,32 @@ class SudokuGUI:
             fg="white",
             activebackground="#C0392B",
             activeforeground="white",
-            padx=8,
+            padx=6,
             pady=4,
             relief=tk.FLAT,
             cursor="hand2"
         )
-        btn_reset.pack(side=tk.LEFT, padx=3)
+        btn_reset.pack(side=tk.LEFT, padx=2)
+
+        # High Score / Best Time Label
+        self.best_label = tk.Label(
+            control_frame,
+            text="Best: --:--",
+            font=("Segoe UI", 9, "bold"),
+            bg="#F0F0F0",
+            fg="#8E44AD"
+        )
+        self.best_label.pack(side=tk.RIGHT, padx=(4, 6))
 
         # Timer Display Label
         self.timer_label = tk.Label(
             control_frame,
             text="Time: 00:00",
-            font=("Segoe UI", 10, "bold"),
+            font=("Segoe UI", 9, "bold"),
             bg="#F0F0F0",
             fg="#2C3E50"
         )
-        self.timer_label.pack(side=tk.RIGHT, padx=(10, 5))
+        self.timer_label.pack(side=tk.RIGHT, padx=(4, 4))
 
         # Main 9x9 Board Frame
         board_container = tk.Frame(self.root, bg="#222222", bd=2)
@@ -196,6 +257,11 @@ class SudokuGUI:
         )
         self.status_label.pack(side=tk.BOTTOM, fill=tk.X)
 
+    def _on_difficulty_changed(self, event=None):
+        diff = self.difficulty_var.get().lower()
+        best_sec = self.high_scores.get(diff)
+        self.best_label.config(text=f"Best: {self._format_seconds(best_sec)}")
+
     # Timer Methods
     def _start_timer(self):
         self._stop_timer()
@@ -218,8 +284,9 @@ class SudokuGUI:
             self.timer_job = self.root.after(1000, self._tick_timer)
 
     def _get_formatted_time(self):
-        mins = (self.timer_seconds - 1) // 60 if self.timer_seconds > 0 else 0
-        secs = (self.timer_seconds - 1) % 60 if self.timer_seconds > 0 else 0
+        elapsed = self.timer_seconds - 1 if self.timer_seconds > 0 else 0
+        mins = elapsed // 60
+        secs = elapsed % 60
         return f"{mins:02d}:{secs:02d}"
 
     def _validate_input(self, new_val, row_str, col_str):
@@ -265,12 +332,71 @@ class SudokuGUI:
                 )
 
                 if self.board.is_complete():
-                    self._stop_timer()
-                    total_time = self._get_formatted_time()
-                    messagebox.showinfo("Success", f"Congratulations! You solved the Sudoku puzzle in {total_time}!")
-                    self.status_label.config(text=f"Puzzle Completed Successfully in {total_time}!", fg="green")
+                    self._handle_victory()
 
         return True
+
+    def _handle_victory(self):
+        self._stop_timer()
+        elapsed = self.timer_seconds - 1 if self.timer_seconds > 0 else 0
+        total_time = self._get_formatted_time()
+        diff = self.difficulty_var.get().lower()
+
+        current_best = self.high_scores.get(diff)
+        is_new_record = current_best is None or elapsed < current_best
+
+        if is_new_record:
+            self.high_scores[diff] = elapsed
+            self._save_high_scores()
+            self.best_label.config(text=f"Best: {self._format_seconds(elapsed)}")
+            messagebox.showinfo(
+                "New Best Record!",
+                f"Congratulations! You set a NEW RECORD for {diff.capitalize()} difficulty in {total_time}!"
+            )
+            self.status_label.config(text=f"NEW RECORD! Solved in {total_time}!", fg="green")
+        else:
+            messagebox.showinfo(
+                "Success",
+                f"Congratulations! You solved the Sudoku puzzle in {total_time}!"
+            )
+            self.status_label.config(text=f"Puzzle Completed Successfully in {total_time}!", fg="green")
+
+    def get_hint(self):
+        if not self.board or self.board.is_complete():
+            return
+
+        # Solve a copy of the original board to obtain solution
+        solution_grid = [row[:] for row in self.board.original_grid]
+        if not SudokuSolver.solve(solution_grid):
+            self.status_label.config(text="Cannot generate hint for invalid board.", fg="red")
+            return
+
+        # Find first empty or incorrect cell
+        for r in range(9):
+            for c in range(9):
+                current_val = self.board.get_val(r, c)
+                correct_val = solution_grid[r][c]
+
+                if current_val != correct_val:
+                    self.board.set_val(r, c, correct_val)
+                    entry = self.entries[r][c]
+
+                    entry.config(validate="none")
+                    entry.delete(0, tk.END)
+                    entry.insert(0, str(correct_val))
+
+                    # Purple Hint Highlight
+                    entry.config(bg="#F3E5F5", fg="#7B1FA2", state="normal")
+                    entry.config(validate="key")
+
+                    self.status_label.config(
+                        text=f"Hint: Placed correct number {correct_val} at Row {r+1}, Col {c+1}.",
+                        fg="#7B1FA2"
+                    )
+
+                    if self.board.is_complete():
+                        self._handle_victory()
+                    return
 
     def new_game(self):
         diff = self.difficulty_var.get().lower()
@@ -278,6 +404,7 @@ class SudokuGUI:
         self.board = SudokuBoard(puzzle_grid)
         self._update_gui_from_board()
         self._start_timer()
+        self._on_difficulty_changed()
         self.status_label.config(
             text=f"New Game Started. Difficulty: {diff.capitalize()}",
             fg="black"
